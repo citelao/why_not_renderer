@@ -1,0 +1,14 @@
+{
+  "name": "renderer",
+  "version": "1.0.0",
+  "description": "render stuff",
+  "main": "dist/index.htm",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^3.9.5"
+  }
+}
