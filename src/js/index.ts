@@ -1,3 +1,5 @@
+import Vec3D, { NormalizedVec3D } from "./Vec3D";
+
 console.log("Loading renderer!");
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
@@ -40,8 +42,42 @@ function repeat(times: number, fn: (index: number) => void) {
     }
 }
 
+function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): false | number {
+    const planeNormal = dir.inverse();
+    const rayTraversal = ((sphereCenter.minus(pos)).dot(planeNormal) / dir.dot(planeNormal));
+    const planeCollision = pos.plus(dir.times(rayTraversal));
+
+    const dist = planeCollision.minus(sphereCenter).magnitude();
+
+    if (dist < radius) {
+        return dist;
+    }
+
+    return false;
+}
+
 function render(position: Pos): Color {
-    return { r: position.x / WIDTH  * COLOR_MAX, g: 0, b: position.y / HEIGHT * COLOR_MAX };
+    // Take a position on the camera plane and convert to a vector.
+
+    // TODO frustrum.
+    // TODO normalize?
+    const pt: Vec3D = Vec3D.Create({
+        x: position.x,
+        y: position.y,
+        z: 0
+    });
+
+    const dir: Vec3D = Vec3D.Create({
+        x: 0,
+        y: 0,
+        z: 1
+    });
+
+    if (intersectSphere(pt, dir, new Vec3D(200, 150, 40), 50)) {
+        return { r: position.x / WIDTH * COLOR_MAX, g: COLOR_MAX, b: position.y / HEIGHT * COLOR_MAX }
+    }
+
+    return { r: position.x / WIDTH * COLOR_MAX, g: 0, b: position.y / HEIGHT * COLOR_MAX };
 }
 
 repeat(WIDTH, (x) => {
@@ -50,8 +86,5 @@ repeat(WIDTH, (x) => {
         setPixel(data, pos, render(pos));
     })
 })
-
-setPixel(data, { x: 10, y: 4}, { r: 255, g: 150, b: 100});
-setPixel(data, { x: 15, y: 24}, { r: 255, g: 150, b: 100});
 
 ctx.putImageData(imageData, 0, 0);
