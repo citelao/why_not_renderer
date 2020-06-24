@@ -72,11 +72,26 @@ function render(position: Pos): Color {
         y: 0,
         z: 1
     });
-
+    
     const RADIUS = 50;
-    const dist = intersectSphere(pt, dir, new Vec3D(200, 150, 40), RADIUS);
-    if (dist !== false) {
-        return { r: position.x / WIDTH * COLOR_MAX, g: ((1 - (dist / RADIUS)) * 0.5 + 0.5) * COLOR_MAX, b: position.y / HEIGHT * COLOR_MAX }
+    const CIRCLES: Array<{center: Vec3D; radius: number}> = [
+        { center: new Vec3D(200, 150, 40), radius: RADIUS },
+        { center: new Vec3D(200, 200, 40), radius: RADIUS },
+        { center: new Vec3D(210, 200, 90), radius: RADIUS },
+    ];
+
+    const collisions = CIRCLES
+        .map((c) => intersectSphere(pt, dir, c.center, c.radius))
+        .filter((res) => res !== false)
+        .sort() as number[];
+
+    if (collisions.length >= 0) {
+        const lastCollision = collisions[0];
+        return {
+            r: 0,
+            g: ((1 - (lastCollision / RADIUS)) * 0.5 + 0.5) * COLOR_MAX, 
+            b: 0
+        };
     }
 
     return { r: position.x / WIDTH * COLOR_MAX, g: 0, b: position.y / HEIGHT * COLOR_MAX };
