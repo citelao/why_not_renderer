@@ -5,6 +5,7 @@ const ctx = canvas.getContext("2d");
 
 const WIDTH = 512;
 const HEIGHT = 512;
+
 const imageData = ctx.createImageData(WIDTH, HEIGHT);
 const data = imageData.data;
 
@@ -13,6 +14,7 @@ type Pos = {
     y: number;
 }
 
+const COLOR_MAX = 255;
 type Color = {
     r: number;
     g: number;
@@ -38,9 +40,14 @@ function repeat(times: number, fn: (index: number) => void) {
     }
 }
 
+function render(position: Pos): Color {
+    return { r: position.x / WIDTH  * COLOR_MAX, g: 0, b: position.y / HEIGHT * COLOR_MAX };
+}
+
 repeat(WIDTH, (x) => {
     repeat(HEIGHT, (y) => {
-        setPixel(data, { x, y }, { r: 255, g: 0, b: 100});
+        const pos: Pos = { x, y };
+        setPixel(data, pos, render(pos));
     })
 })
 
