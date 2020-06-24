@@ -60,7 +60,6 @@ function render(position: Pos): Color {
     // Take a position on the camera plane and convert to a vector.
 
     // TODO frustrum.
-    // TODO normalize?
     const pt: Vec3D = Vec3D.Create({
         x: position.x,
         y: position.y,
@@ -85,7 +84,7 @@ function render(position: Pos): Color {
         .filter((res) => res !== false)
         .sort() as number[];
 
-    if (collisions.length >= 0) {
+    if (collisions.length > 0) {
         const lastCollision = collisions[0];
         return {
             r: 0,
