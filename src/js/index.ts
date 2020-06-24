@@ -73,8 +73,10 @@ function render(position: Pos): Color {
         z: 1
     });
 
-    if (intersectSphere(pt, dir, new Vec3D(200, 150, 40), 50)) {
-        return { r: position.x / WIDTH * COLOR_MAX, g: COLOR_MAX, b: position.y / HEIGHT * COLOR_MAX }
+    const RADIUS = 50;
+    const dist = intersectSphere(pt, dir, new Vec3D(200, 150, 40), RADIUS);
+    if (dist !== false) {
+        return { r: position.x / WIDTH * COLOR_MAX, g: ((1 - (dist / RADIUS)) * 0.5 + 0.5) * COLOR_MAX, b: position.y / HEIGHT * COLOR_MAX }
     }
 
     return { r: position.x / WIDTH * COLOR_MAX, g: 0, b: position.y / HEIGHT * COLOR_MAX };
