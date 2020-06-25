@@ -11,7 +11,7 @@ const ctx = canvas.getContext("2d");
 // const render_type_radios = document.getElementsByName("render_type");
 
 type RenderMode = "regular" | "depth";
-let renderMode: RenderMode = "depth";
+let renderMode: RenderMode = "regular";
 
 const WIDTH = 512;
 const HEIGHT = 512;
@@ -209,6 +209,44 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         };
     }
 
+    // Cast light rays
+    const light_intersections = scene.lights.map((light) => {
+        const lightRay = Ray3D.Create({
+            pt: lastCollision.collision.point,
+            dir: light.center.minus(lastCollision.collision.point).normalized()
+        })
+
+        const lightCollisions = collideRay(scene, lightRay);
+
+        return {
+            light: light,
+            collisions: lightCollisions
+        };
+    }).filter((v) => {
+        return v.collisions.length === 0;
+    });
+
+    const light_color = light_intersections.reduce((accum, current) => {
+        // TODO: magic numbers for light falloff. I think it's expontential,
+        // hence the squared term.
+        const light_distance = current.light.center.minus(ray.pt).magnitude();
+        const increase = current.light.intensity / ((light_distance / 500) ** 2);
+
+        return {
+            r: accum.r + increase,
+            g: accum.g + increase,
+            b: accum.b + increase
+        };
+    }, BLACK);
+
+    // if (light_intersections.length === 0) {
+    //     return BLACK;
+    // } else {
+    //     return WHITE;
+    // }
+
+    return light_color;
+
     const color = COLOR_MAX;
 
     const MAX_MAGNITUDE = 1;
@@ -285,7 +323,8 @@ repeat(5, (i) => {
 const SCENE: IScene = {
     circles: CIRCLES,
     lights: [
-        { center: new Vec3D(0, 200, 200), intensity: 100 }
+        { center: new Vec3D(300, 400, 300), intensity: 100 },
+        { center: new Vec3D(100, 400, 300), intensity: 100 },
     ]
 };
 
