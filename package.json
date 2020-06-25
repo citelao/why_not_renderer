@@ -4,6 +4,7 @@
   "description": "render stuff",
   "main": "dist/index.htm",
   "scripts": {
+    "watch": "parcel src/index.html",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

@@ -1,4 +1,4 @@
-import Vec3D, { NormalizedVec3D } from "./Vec3D";
+import Vec3D from "./Vec3D";
 
 const EPSILON = 0.0008;
 
@@ -72,7 +72,12 @@ function flatten<T>(array: Array<Array<T>>): Array<T> {
     return array.reduce((accum, val) => accum.concat(val), []);
 }
 
-function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): Vec3D[] {
+interface ICollision {
+    point: Vec3D;
+    normal: Vec3D;
+}
+
+function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): ICollision[] {
     const planeNormal = dir.inverse();
     const rayTraversal = ((sphereCenter.minus(pos)).dot(planeNormal) / dir.dot(planeNormal));
     const planeCollision = pos.plus(dir.times(rayTraversal));
@@ -101,9 +106,16 @@ function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: nu
 
     // If we get here, there are two intersections: before and after the normal
     // plane.
+
+    const pointA = planeCollision.minus(offsetRay);
+    const normalA = pointA.minus(sphereCenter).normalized();
+
+    const pointB = planeCollision.plus(offsetRay);
+    const normalB = pointA.minus(sphereCenter).normalized();
+
     const intersections = [
-        planeCollision.minus(offsetRay),
-        planeCollision.plus(offsetRay)
+        { point: pointA, normal: normalA },
+        { point: pointB, normal: normalB },
     ];
 
     return intersections;
@@ -119,7 +131,7 @@ interface IScene {
 
 function collideRay(scene: IScene, pt: Vec3D, dir: Vec3D): Array<{
     circle: ICircle,
-    collision: Vec3D
+    collision: ICollision
 }> {
     // Get collisions.
     const collisions = scene.circles
@@ -130,15 +142,18 @@ function collideRay(scene: IScene, pt: Vec3D, dir: Vec3D): Array<{
             };
         })
         .filter((res) => res.collisions.length !== 0)
-        .reduce((accum, val) => accum.concat(val.collisions.map((col) => {
+        .reduce<Array<{
+            circle: ICircle,
+            collision: ICollision
+        }>>((accum, val) => accum.concat(val.collisions.map((col) => {
             return {
                 circle: val.circle,
                 collision: col
             };
         })), [])
         .sort((a, b): number => {
-            const depthA = a.collision.minus(pt).magnitude();
-            const depthB = b.collision.minus(pt).magnitude();
+            const depthA = a.collision.point.minus(pt).magnitude();
+            const depthB = b.collision.point.minus(pt).magnitude();
 
             return depthA - depthB;
         });
@@ -152,7 +167,7 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
 
     if (collisions.length > 0) {
         const lastCollision = collisions[0];
-        const depth = lastCollision.collision.minus(pt).magnitude();
+        const depth = lastCollision.collision.point.minus(pt).magnitude();
         const color = COLOR_MAX; //Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
 
         const MAX_MAGNITUDE = 1;
@@ -164,13 +179,12 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
             };
         }
 
-        const newNorm: Vec3D = collisions[0].collision.minus(collisions[0].circle.center).normalized();
-        const newPt: Vec3D = lastCollision.collision.plus(newNorm);
+        // const newPt: Vec3D = lastCollision.collision.plus(newNorm);
 
         return {
-            r: newNorm.x * COLOR_MAX,
-            g: newNorm.y * COLOR_MAX,
-            b: newNorm.z * COLOR_MAX,
+            r: lastCollision.collision.normal.x * COLOR_MAX,
+            g: lastCollision.collision.normal.y * COLOR_MAX,
+            b: lastCollision.collision.normal.z * COLOR_MAX,
         }
 
         // const bounce = cast(newPt,
@@ -267,8 +281,8 @@ canvas.addEventListener("mousemove", function (e) {
         return;
     }
 
-    const newNorm: Vec3D = collisions[0].collision.minus(collisions[0].circle.center).normalized();
-    const newPt: Vec3D = collisions[0].collision.plus(newNorm.times(1));
+    const newNorm: Vec3D = collisions[0].collision.normal;
+    const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
 
     const collisions2 = collideRay(SCENE, newPt, newNorm);
     const res = newNorm;
