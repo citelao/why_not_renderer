@@ -137,6 +137,8 @@ interface IMaterial {
     /** Number from 0-1 saying how much to spread bounce rays. Proxy for
      * reflectance. */
     spread: number;
+
+    intrinsicColor: Color;
 }
 
 interface ICircle {
@@ -258,10 +260,11 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
 
     const bounce = bounces.reduce((accum, c) => {
         const factor = BOUNCE_COUNT;
+        const intrinsicColor = (lastCollision.object as ICircle).material.intrinsicColor;
         return {
-            r: accum.r + (c.r / factor),
-            g: accum.g + (c.g / factor),
-            b: accum.b + (c.b / factor)
+            r: accum.r + (c.r / factor * (intrinsicColor.r / COLOR_MAX)),
+            g: accum.g + (c.g / factor * (intrinsicColor.g / COLOR_MAX)),
+            b: accum.b + (c.b / factor * (intrinsicColor.b / COLOR_MAX))
         };
     }, BLACK);
 
@@ -304,7 +307,12 @@ repeat(5, (i) => {
             center: new Vec3D(x, y, z),
             radius: RADIUS,
             material: {
-                spread: (j / 5)
+                spread: (j / 5),
+                intrinsicColor: {
+                    r: i * 50 + 10,
+                    g: (j + i) * 20 + 50,
+                    b: j * 70 + 10
+                }
             }
         });
     });
@@ -319,7 +327,8 @@ repeat(5, (i) => {
             center: new Vec3D(x, y, z),
             radius: RADIUS,
             material: {
-                spread: (j / 5)
+                spread: (j / 5),
+                intrinsicColor: WHITE
             }
         });
     });
