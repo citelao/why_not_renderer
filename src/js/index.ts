@@ -229,6 +229,8 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     const light_color = light_intersections.reduce((accum, current) => {
         // TODO: magic numbers for light falloff. I think it's expontential,
         // hence the squared term.
+        //
+        // TODO: colored lights
         const light_distance = current.light.center.minus(ray.pt).magnitude();
         const increase = current.light.intensity / ((light_distance / 500) ** 2);
 
@@ -239,23 +241,9 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         };
     }, BLACK);
 
-    // if (light_intersections.length === 0) {
-    //     return BLACK;
-    // } else {
-    //     return WHITE;
-    // }
-
-    return light_color;
-
-    const color = COLOR_MAX;
-
-    const MAX_MAGNITUDE = 1;
-    if (iteration >= MAX_MAGNITUDE) {
-        return {
-            r: color,
-            g: color, 
-            b: color
-        };
+    const MAX_BOUNCES = 3;
+    if (iteration >= MAX_BOUNCES) {
+        return light_color;
     }
 
     const bounceNorm = ray.dir.bounceNormal(lastCollision.collision.normal);
@@ -276,12 +264,12 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         newRay,
         iteration + 1);
 
-    return bounce;
-
+    const mix = 0.5;
+    const imix = 1 - mix;
     return {
-        r: color,
-        g: color, 
-        b: color
+        r: light_color.r * imix + bounce.r * mix,
+        g: light_color.g * imix + bounce.g * mix,
+        b: light_color.b * imix + bounce.b * mix
     };
 }
 
