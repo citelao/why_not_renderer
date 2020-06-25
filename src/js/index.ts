@@ -8,6 +8,11 @@ console.log("Loading renderer!");
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
 
+// const render_type_radios = document.getElementsByName("render_type");
+
+type RenderMode = "regular" | "depth";
+let renderMode: RenderMode = "depth";
+
 const WIDTH = 512;
 const HEIGHT = 512;
 
@@ -186,40 +191,17 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     // Get collisions.
     const collisions = collideRay(scene, ray);
 
-    if (collisions.length > 0) {
-        const lastCollision = collisions[0];
-        // const depth = lastCollision.collision.point.minus(pt).magnitude();
-        const color = COLOR_MAX; //Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
+    // If we had no collisions, return black.
+    if (collisions.length === 0) {
+        return BLACK;
+    }
 
-        const MAX_MAGNITUDE = 1;
-        if (iteration >= MAX_MAGNITUDE) {
-            return {
-                r: color,
-                g: color, 
-                b: color
-            };
-        }
+    const lastCollision = collisions[0];
 
-        const bounceNorm = ray.dir.bounceNormal(lastCollision.collision.normal);
-        const newPt: Vec3D = lastCollision.collision.point;
-        const newRay = Ray3D.Create({
-            pt: newPt,
-            dir: bounceNorm
-        });
-
-        // return normalToColor(bounceNorm);
-        // return {
-        //     r: bounceNorm.x * COLOR_MAX,
-        //     g: bounceNorm.y * COLOR_MAX,
-        //     b: bounceNorm.z * COLOR_MAX,
-        // }
-
-        const bounce = cast(SCENE,
-            newRay,
-            iteration + 1);
-
-        return bounce;
-
+    if (renderMode === "depth") {
+        // Simply find the depth and return that as our color.
+        const depth = lastCollision.collision.point.minus(ray.pt).magnitude();
+        const color = Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
         return {
             r: color,
             g: color, 
@@ -227,7 +209,42 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         };
     }
 
-    return BLACK;
+    const color = COLOR_MAX;
+
+    const MAX_MAGNITUDE = 1;
+    if (iteration >= MAX_MAGNITUDE) {
+        return {
+            r: color,
+            g: color, 
+            b: color
+        };
+    }
+
+    const bounceNorm = ray.dir.bounceNormal(lastCollision.collision.normal);
+    const newPt: Vec3D = lastCollision.collision.point;
+    const newRay = Ray3D.Create({
+        pt: newPt,
+        dir: bounceNorm
+    });
+
+    // return normalToColor(bounceNorm);
+    // return {
+    //     r: bounceNorm.x * COLOR_MAX,
+    //     g: bounceNorm.y * COLOR_MAX,
+    //     b: bounceNorm.z * COLOR_MAX,
+    // }
+
+    const bounce = cast(SCENE,
+        newRay,
+        iteration + 1);
+
+    return bounce;
+
+    return {
+        r: color,
+        g: color, 
+        b: color
+    };
 }
 
 function getRayForScreenCoordinates(pos: Pos): Ray3D {
@@ -296,6 +313,21 @@ repeat(SCALE_SIZE, (y) => {
 });
 
 ctx.putImageData(imageData, 0, 0);
+
+// render_type_radios.forEach((r) => {
+//     (r as HTMLInputElement).addEventListener("change", function (e) {
+//         switch(this.value) {
+//         case "regular":
+//             renderMode = "regular";
+//             break;
+//         case "depth":
+//             renderMode = "depth";
+//             break;
+//         default:
+//             throw new Error(`Unknown value '${this.value}'`);
+//         }
+//     });
+// });
 
 canvas.addEventListener("mousemove", function (e) {
     const rect = this.getBoundingClientRect();
