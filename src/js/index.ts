@@ -97,7 +97,7 @@ function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: nu
     return intersections;
 }
 
-function render(pt: Vec3D, dir: Vec3D): Color {
+function cast(pt: Vec3D, dir: Vec3D, iteration = 0): Color {
     const RADIUS = 50;
     const CIRCLES: Array<{center: Vec3D; radius: number}> = [];
     repeat(5, (i) => {
@@ -114,20 +114,54 @@ function render(pt: Vec3D, dir: Vec3D): Color {
 
     // Get collisions.
     const collisions = CIRCLES
-        .map((c) => intersectSphere(pt, dir, c.center, c.radius))
-        .filter((res) => res.length !== 0)
-        .reduce((accum, val) => accum.concat(val), [])
+        .map((c) => {
+            return {
+                circle: c,
+                collisions: intersectSphere(pt, dir, c.center, c.radius)
+            };
+        })
+        .filter((res) => res.collisions.length !== 0)
+        .reduce((accum, val) => accum.concat(val.collisions.map((col) => {
+            return {
+                circle: val.circle,
+                col: col
+            };
+        })), [])
         .sort((a, b): number => {
-            const depthA = a.minus(pt).magnitude();
-            const depthB = b.minus(pt).magnitude();
+            const depthA = a.col.minus(pt).magnitude();
+            const depthB = b.col.minus(pt).magnitude();
 
             return depthA - depthB;
         });
 
     if (collisions.length > 0) {
         const lastCollision = collisions[0];
-        const depth = lastCollision.minus(pt).magnitude();
-        const color = Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
+        const depth = lastCollision.col.minus(pt).magnitude();
+        const color = COLOR_MAX; //Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
+
+        const MAX_MAGNITUDE = 1;
+        if (iteration >= MAX_MAGNITUDE) {
+            return {
+                r: color,
+                g: color, 
+                b: color
+            };
+        }
+
+        const newNorm: Vec3D = lastCollision.circle.center.minus(lastCollision.col).normalized();
+        const newPt: Vec3D = lastCollision.col.plus(newNorm);
+
+        return {
+            r: newNorm.x * COLOR_MAX,
+            g: newNorm.y * COLOR_MAX,
+            b: newNorm.z * COLOR_MAX,
+        }
+
+        // const bounce = cast(newPt,
+        //     newNorm,
+        //     iteration + 1);
+
+        // return bounce;
 
         return {
             r: color,
@@ -157,7 +191,7 @@ repeat(WIDTH, (x) => {
             z: 1
         });
 
-        setPixel(data, pos, render(pt, dir));
+        setPixel(data, pos, cast(pt, dir));
     })
 })
 
