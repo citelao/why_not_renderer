@@ -229,47 +229,6 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         return WHITE;
     }
 
-    // Cast light rays
-    // const LIGHT_RAY_COUNT = 3;
-    // const LIGHT_SPREAD_AMOUNT = 0.3;
-    // const light_intersections = scene.lights.map((light) => {
-    //     const successful_light_rays: boolean[] = [];
-    //     repeat(LIGHT_RAY_COUNT, () => {
-    //         const lightRay = Ray3D.Create({
-    //             pt: lastCollision.collision.point,
-    //             dir: perturb(light.center.minus(lastCollision.collision.point).normalized(), LIGHT_SPREAD_AMOUNT)
-    //         });
-    
-    //         const lightCollision = collideRay(scene, lightRay);
-    //         const reached_light = lightCollision.length === 0;
-    //         successful_light_rays.push(reached_light);
-    //     });
-
-    //     const count = successful_light_rays.filter((v) => v === true).length;
-
-    //     return {
-    //         light: light,
-    //         reachedPercent: count / successful_light_rays.length
-    //     };
-    // }).filter((v) => {
-    //     return v.reachedPercent !== 0;
-    // });
-
-    // const light_color = light_intersections.reduce((accum, current) => {
-    //     // TODO: magic numbers for light falloff. I think it's expontential,
-    //     // hence the squared term.
-    //     //
-    //     // TODO: colored lights
-    //     const light_distance = current.light.center.minus(ray.pt).magnitude();
-    //     const increase = current.light.intensity / ((light_distance / 500) ** 2) * current.reachedPercent;
-
-    //     return {
-    //         r: accum.r + increase,
-    //         g: accum.g + increase,
-    //         b: accum.b + increase
-    //     };
-    // }, BLACK);
-
     const bounceNorm = ray.dir.bounceNormal(lastCollision.collision.normal);
     const newPt: Vec3D = lastCollision.collision.point;
     const newRay = Ray3D.Create({
@@ -277,8 +236,8 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         dir: bounceNorm
     });
 
-    const BOUNCE_COUNT = 3;
-    const SPREAD_AMOUNT = 0.3;
+    const BOUNCE_COUNT = 5;
+    const SPREAD_AMOUNT = 0.8;
     const bounces: Color[] = [];
     repeat(BOUNCE_COUNT, (i) => {
         const perturbedRay = Ray3D.Create({
@@ -302,6 +261,8 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         g: rawBounce.g / BOUNCE_COUNT,
         b: rawBounce.b / BOUNCE_COUNT
     };
+
+    // TODO light intensity.
 
     return bounce;
 }
@@ -343,7 +304,7 @@ repeat(5, (i) => {
     });
 });
 const LIGHTS: Array<ILight> = [
-    { type: "light", center: new Vec3D(300, 400, 300), intensity: 100, radius: 40 },
+    { type: "light", center: new Vec3D(600, 800, 300), intensity: 100, radius: 300 },
     { type: "light", center: new Vec3D(100, 400, 300), intensity: 100, radius: 20 },
 ];
 const SCENE: IScene = {
