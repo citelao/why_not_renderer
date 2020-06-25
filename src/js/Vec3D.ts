@@ -9,6 +9,15 @@ export default class Vec3D {
         return new Vec3D(x, y, z);
     }
 
+    public static CreateRandomNormal(): Vec3D {
+        const random = new Vec3D(
+            Math.random(),
+            Math.random(),
+            Math.random()
+        );
+        return random.normalized();
+    }
+
     constructor(x: number, y: number, z: number) {
         this.x = x;
         this.y = y;

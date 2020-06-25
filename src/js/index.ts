@@ -187,6 +187,11 @@ function normalToColor(normal: Vec3D): Color {
     }
 }
 
+function perturb(vec: Vec3D, amount: number): Vec3D {
+    const randomVector = Vec3D.CreateRandomNormal();
+    return vec.plus(randomVector.times(amount));
+}
+
 function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     // Get collisions.
     const collisions = collideRay(scene, ray);
@@ -260,9 +265,34 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     //     b: bounceNorm.z * COLOR_MAX,
     // }
 
-    const bounce = cast(SCENE,
-        newRay,
-        iteration + 1);
+    const BOUNCE_COUNT = 3;
+    const SPREAD_AMOUNT = 0.1;
+    const bounces: Color[] = [];
+    repeat(BOUNCE_COUNT, (i) => {
+        const perturbedRay = Ray3D.Create({
+            pt: newRay.pt,
+            dir: perturb(newRay.dir, SPREAD_AMOUNT)
+        })
+        bounces.push(cast(SCENE,
+            perturbedRay,
+            iteration + 1));
+    });
+
+    const rawBounce = bounces.reduce((accum, c) => {
+        return {
+            r: accum.r + c.r,
+            g: accum.g + c.g,
+            b: accum.b + c.b
+        };
+    }, BLACK);
+    const bounce: Color = {
+        r: rawBounce.r / BOUNCE_COUNT,
+        g: rawBounce.g / BOUNCE_COUNT,
+        b: rawBounce.b / BOUNCE_COUNT
+    };
+    // const bounce = cast(SCENE,
+    //     newRay,
+    //     iteration + 1);
 
     const mix = 0.5;
     const imix = 1 - mix;
