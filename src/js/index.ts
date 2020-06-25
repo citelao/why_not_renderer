@@ -173,26 +173,56 @@ function cast(pt: Vec3D, dir: Vec3D, iteration = 0): Color {
     return BLACK;
 }
 
+function getRayForScreenCoordinates(pos: Pos): { pt: Vec3D, dir: Vec3D } {
+    // Take a position on the camera plane and convert to a vector.
+    // TODO frustrum.
+    const pt: Vec3D = Vec3D.Create({
+        x: pos.x,
+        y: pos.y,
+        z: 0
+    });
+
+    const dir: Vec3D = Vec3D.Create({
+        x: 0,
+        y: 0,
+        z: 1
+    });
+
+    return {
+        pt,
+        dir
+    };
+}
+
 repeat(WIDTH, (x) => {
     repeat(HEIGHT, (y) => {
         const pos: Pos = { x, y };
 
         // Take a position on the camera plane and convert to a vector.
         // TODO frustrum.
-        const pt: Vec3D = Vec3D.Create({
-            x: pos.x,
-            y: pos.y,
-            z: 0
-        });
-
-        const dir: Vec3D = Vec3D.Create({
-            x: 0,
-            y: 0,
-            z: 1
-        });
-
+        const { pt, dir } = getRayForScreenCoordinates(pos);
         setPixel(data, pos, cast(pt, dir));
     })
 })
 
 ctx.putImageData(imageData, 0, 0);
+
+function getMousePos(canvas: HTMLCanvasElement, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: evt.clientX - rect.left,
+      y: evt.clientY - rect.top
+    };
+}
+
+canvas.addEventListener("mousemove", function (e) {
+    const rect = this.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+
+    const { pt, dir } = getRayForScreenCoordinates(pos);
+
+    console.log(cast(pt, dir));
+});
