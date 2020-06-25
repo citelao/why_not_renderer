@@ -65,4 +65,8 @@ export default class Vec3D {
             this.z * n
         );
     }
+
+    public bounceNormal(normal: Vec3D) {
+        return this.minus(normal.times(2 * this.dot(normal)));
+    }
 }

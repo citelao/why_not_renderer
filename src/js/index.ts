@@ -161,6 +161,15 @@ function collideRay(scene: IScene, pt: Vec3D, dir: Vec3D): Array<{
     return collisions;
 }
 
+function normalToColor(normal: Vec3D): Color {
+    const mid = COLOR_MAX / 2;
+    return {
+        r: 0.5 * normal.x * COLOR_MAX + mid,
+        g: 0.5 * normal.y * COLOR_MAX + mid,
+        b: 0.5 * normal.z * COLOR_MAX + mid,
+    }
+}
+
 function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
     // Get collisions.
     const collisions = collideRay(scene, pt, dir);
@@ -180,12 +189,14 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
         }
 
         // const newPt: Vec3D = lastCollision.collision.plus(newNorm);
+        const bounceNorm = dir.bounceNormal(lastCollision.collision.normal);
 
-        return {
-            r: lastCollision.collision.normal.x * COLOR_MAX,
-            g: lastCollision.collision.normal.y * COLOR_MAX,
-            b: lastCollision.collision.normal.z * COLOR_MAX,
-        }
+        return normalToColor(bounceNorm);
+        // return {
+        //     r: bounceNorm.x * COLOR_MAX,
+        //     g: bounceNorm.y * COLOR_MAX,
+        //     b: bounceNorm.z * COLOR_MAX,
+        // }
 
         // const bounce = cast(newPt,
         //     newNorm,
@@ -284,11 +295,13 @@ canvas.addEventListener("mousemove", function (e) {
     const newNorm: Vec3D = collisions[0].collision.normal;
     const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
 
-    const collisions2 = collideRay(SCENE, newPt, newNorm);
-    const res = newNorm;
-    // const res = (collisions2.length === 0)
-    //     ? "NO"
-    //     : collisions2[0].circle.center;
+    const bounceNorm = dir.bounceNormal(collisions[0].collision.normal).normalized();
+    const res = bounceNorm;
+    // const collisions2 = collideRay(SCENE, newPt, newNorm);
+    // const res = newNorm;
+    // // const res = (collisions2.length === 0)
+    // //     ? "NO"
+    // //     : collisions2[0].circle.center;
 
     console.log(
         // cast(SCENE, pt, dir),
