@@ -118,7 +118,7 @@ function render(position: Pos): Color {
     repeat(5, (i) => {
         repeat(5, (j) => {
             const x = RADIUS + (RADIUS + 5) * i * 2;
-            const y = RADIUS + (RADIUS / 3) * j * 2;
+            const y = RADIUS + (RADIUS / 2) * j * 2;
             const z = (60 * j) + 60;
             CIRCLES.push({
                 center: new Vec3D(x, y, z),
