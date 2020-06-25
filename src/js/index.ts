@@ -97,23 +97,20 @@ function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: nu
     return intersections;
 }
 
-function cast(pt: Vec3D, dir: Vec3D, iteration = 0): Color {
-    const RADIUS = 50;
-    const CIRCLES: Array<{center: Vec3D; radius: number}> = [];
-    repeat(5, (i) => {
-        repeat(5, (j) => {
-            const x = RADIUS + (RADIUS + 5) * i * 2;
-            const y = RADIUS + (RADIUS / 2) * j * 2;
-            const z = (60 * j) + 60;
-            CIRCLES.push({
-                center: new Vec3D(x, y, z),
-                radius: RADIUS
-            });
-        });
-    });
+interface ICircle {
+    center: Vec3D;
+    radius: number;
+}
+interface IScene {
+    circles: Array<ICircle>;
+}
 
+function collideRay(scene: IScene, pt: Vec3D, dir: Vec3D): Array<{
+    circle: ICircle,
+    collision: Vec3D
+}> {
     // Get collisions.
-    const collisions = CIRCLES
+    const collisions = scene.circles
         .map((c) => {
             return {
                 circle: c,
@@ -124,19 +121,26 @@ function cast(pt: Vec3D, dir: Vec3D, iteration = 0): Color {
         .reduce((accum, val) => accum.concat(val.collisions.map((col) => {
             return {
                 circle: val.circle,
-                col: col
+                collision: col
             };
         })), [])
         .sort((a, b): number => {
-            const depthA = a.col.minus(pt).magnitude();
-            const depthB = b.col.minus(pt).magnitude();
+            const depthA = a.collision.minus(pt).magnitude();
+            const depthB = b.collision.minus(pt).magnitude();
 
             return depthA - depthB;
         });
 
+    return collisions;
+}
+
+function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
+    // Get collisions.
+    const collisions = collideRay(scene, pt, dir);
+
     if (collisions.length > 0) {
         const lastCollision = collisions[0];
-        const depth = lastCollision.col.minus(pt).magnitude();
+        const depth = lastCollision.collision.minus(pt).magnitude();
         const color = COLOR_MAX; //Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
 
         const MAX_MAGNITUDE = 1;
@@ -148,8 +152,8 @@ function cast(pt: Vec3D, dir: Vec3D, iteration = 0): Color {
             };
         }
 
-        const newNorm: Vec3D = lastCollision.circle.center.minus(lastCollision.col).normalized();
-        const newPt: Vec3D = lastCollision.col.plus(newNorm);
+        const newNorm: Vec3D = lastCollision.circle.center.minus(lastCollision.collision).normalized();
+        const newPt: Vec3D = lastCollision.collision.plus(newNorm);
 
         return {
             r: newNorm.x * COLOR_MAX,
@@ -194,6 +198,24 @@ function getRayForScreenCoordinates(pos: Pos): { pt: Vec3D, dir: Vec3D } {
     };
 }
 
+// Generate scene
+const RADIUS = 50;
+const CIRCLES: Array<{center: Vec3D; radius: number}> = [];
+repeat(5, (i) => {
+    repeat(5, (j) => {
+        const x = RADIUS + (RADIUS + 5) * i * 2;
+        const y = RADIUS + (RADIUS / 2) * j * 2;
+        const z = (60 * j) + 60;
+        CIRCLES.push({
+            center: new Vec3D(x, y, z),
+            radius: RADIUS
+        });
+    });
+});
+const SCENE: IScene = {
+    circles: CIRCLES
+};
+
 repeat(WIDTH, (x) => {
     repeat(HEIGHT, (y) => {
         const pos: Pos = { x, y };
@@ -201,19 +223,11 @@ repeat(WIDTH, (x) => {
         // Take a position on the camera plane and convert to a vector.
         // TODO frustrum.
         const { pt, dir } = getRayForScreenCoordinates(pos);
-        setPixel(data, pos, cast(pt, dir));
+        setPixel(data, pos, cast(SCENE, pt, dir));
     })
 })
 
 ctx.putImageData(imageData, 0, 0);
-
-function getMousePos(canvas: HTMLCanvasElement, evt) {
-    var rect = canvas.getBoundingClientRect();
-    return {
-      x: evt.clientX - rect.left,
-      y: evt.clientY - rect.top
-    };
-}
 
 canvas.addEventListener("mousemove", function (e) {
     const rect = this.getBoundingClientRect();
@@ -224,5 +238,13 @@ canvas.addEventListener("mousemove", function (e) {
 
     const { pt, dir } = getRayForScreenCoordinates(pos);
 
-    console.log(cast(pt, dir));
+    const collisions = collideRay(SCENE, pt, dir);
+    if (collisions.length === 0) {
+        return;
+    }
+
+    console.log(
+        // cast(SCENE, pt, dir),
+        collisions[0].circle.center
+    );
 });

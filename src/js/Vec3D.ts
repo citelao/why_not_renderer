@@ -1,4 +1,4 @@
-export type NormalizedVec3D = Vec3D | { normalized: true };
+// export type NormalizedVec3D = Vec3D | { normalized: true };
 
 export default class Vec3D {
     public readonly x: number;
@@ -19,7 +19,7 @@ export default class Vec3D {
         return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2) + Math.pow(this.z, 2));
     }
 
-    public normalized(): NormalizedVec3D {
+    public normalized(): Vec3D {
         const mag = this.magnitude();
         return new Vec3D(
             this.x / this.magnitude(),
