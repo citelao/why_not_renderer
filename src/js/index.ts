@@ -249,18 +249,14 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
             iteration + 1));
     });
 
-    const rawBounce = bounces.reduce((accum, c) => {
+    const bounce = bounces.reduce((accum, c) => {
+        const factor = BOUNCE_COUNT;
         return {
-            r: accum.r + c.r,
-            g: accum.g + c.g,
-            b: accum.b + c.b
+            r: accum.r + (c.r / factor),
+            g: accum.g + (c.g / factor),
+            b: accum.b + (c.b / factor)
         };
     }, BLACK);
-    const bounce: Color = {
-        r: rawBounce.r / BOUNCE_COUNT,
-        g: rawBounce.g / BOUNCE_COUNT,
-        b: rawBounce.b / BOUNCE_COUNT
-    };
 
     // TODO light intensity.
 
