@@ -134,37 +134,41 @@ function intersectSphere(ray: Ray3D, sphereCenter: Vec3D, radius: number): IColl
 }
 
 interface ICircle {
+    type: "circle";
     center: Vec3D;
     radius: number;
 }
 interface ILight {
+    type: "light";
     center: Vec3D;
     intensity: number;
+    radius: number;
 }
+type ISceneObject = ICircle | ILight;
 interface IScene {
-    circles: Array<ICircle>;
-    lights: Array<ILight>;
+    objects: Array<ISceneObject>;
 }
 
+/** Send a ray through the scene for collisions. Sorted by distance to ray start. */
 function collideRay(scene: IScene, ray: Ray3D): Array<{
-    circle: ICircle,
+    object: ISceneObject,
     collision: ICollision
 }> {
     // Get collisions.
-    const collisions = scene.circles
-        .map((c) => {
+    const collisions = scene.objects
+        .map((o) => {
             return {
-                circle: c,
-                collisions: intersectSphere(ray, c.center, c.radius)
+                obj: o,
+                collisions: intersectSphere(ray, o.center, o.radius)
             };
         })
         .filter((res) => res.collisions.length !== 0)
         .reduce<Array<{
-            circle: ICircle,
+            object: ISceneObject,
             collision: ICollision
         }>>((accum, val) => accum.concat(val.collisions.map((col) => {
             return {
-                circle: val.circle,
+                object: val.obj,
                 collision: col
             };
         })), [])
@@ -214,51 +218,57 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         };
     }
 
-    // Cast light rays
-    const LIGHT_RAY_COUNT = 3;
-    const LIGHT_SPREAD_AMOUNT = 0.3;
-    const light_intersections = scene.lights.map((light) => {
-        const successful_light_rays: boolean[] = [];
-        repeat(LIGHT_RAY_COUNT, () => {
-            const lightRay = Ray3D.Create({
-                pt: lastCollision.collision.point,
-                dir: perturb(light.center.minus(lastCollision.collision.point).normalized(), LIGHT_SPREAD_AMOUNT)
-            });
-    
-            const lightCollision = collideRay(scene, lightRay);
-            const reached_light = lightCollision.length === 0;
-            successful_light_rays.push(reached_light);
-        });
-
-        const count = successful_light_rays.filter((v) => v === true).length;
-
-        return {
-            light: light,
-            reachedPercent: count / successful_light_rays.length
-        };
-    }).filter((v) => {
-        return v.reachedPercent !== 0;
-    });
-
-    const light_color = light_intersections.reduce((accum, current) => {
-        // TODO: magic numbers for light falloff. I think it's expontential,
-        // hence the squared term.
-        //
-        // TODO: colored lights
-        const light_distance = current.light.center.minus(ray.pt).magnitude();
-        const increase = current.light.intensity / ((light_distance / 500) ** 2) * current.reachedPercent;
-
-        return {
-            r: accum.r + increase,
-            g: accum.g + increase,
-            b: accum.b + increase
-        };
-    }, BLACK);
-
+    // Stop if we've bounced too much!
     const MAX_BOUNCES = 3;
     if (iteration >= MAX_BOUNCES) {
-        return light_color;
+        return BLACK;
     }
+
+    // Lights are immediate light sources
+    if (lastCollision.object.type === "light") {
+        return WHITE;
+    }
+
+    // Cast light rays
+    // const LIGHT_RAY_COUNT = 3;
+    // const LIGHT_SPREAD_AMOUNT = 0.3;
+    // const light_intersections = scene.lights.map((light) => {
+    //     const successful_light_rays: boolean[] = [];
+    //     repeat(LIGHT_RAY_COUNT, () => {
+    //         const lightRay = Ray3D.Create({
+    //             pt: lastCollision.collision.point,
+    //             dir: perturb(light.center.minus(lastCollision.collision.point).normalized(), LIGHT_SPREAD_AMOUNT)
+    //         });
+    
+    //         const lightCollision = collideRay(scene, lightRay);
+    //         const reached_light = lightCollision.length === 0;
+    //         successful_light_rays.push(reached_light);
+    //     });
+
+    //     const count = successful_light_rays.filter((v) => v === true).length;
+
+    //     return {
+    //         light: light,
+    //         reachedPercent: count / successful_light_rays.length
+    //     };
+    // }).filter((v) => {
+    //     return v.reachedPercent !== 0;
+    // });
+
+    // const light_color = light_intersections.reduce((accum, current) => {
+    //     // TODO: magic numbers for light falloff. I think it's expontential,
+    //     // hence the squared term.
+    //     //
+    //     // TODO: colored lights
+    //     const light_distance = current.light.center.minus(ray.pt).magnitude();
+    //     const increase = current.light.intensity / ((light_distance / 500) ** 2) * current.reachedPercent;
+
+    //     return {
+    //         r: accum.r + increase,
+    //         g: accum.g + increase,
+    //         b: accum.b + increase
+    //     };
+    // }, BLACK);
 
     const bounceNorm = ray.dir.bounceNormal(lastCollision.collision.normal);
     const newPt: Vec3D = lastCollision.collision.point;
@@ -292,17 +302,8 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         g: rawBounce.g / BOUNCE_COUNT,
         b: rawBounce.b / BOUNCE_COUNT
     };
-    // const bounce = cast(SCENE,
-    //     newRay,
-    //     iteration + 1);
 
-    const mix = 0.3;
-    const imix = 1 - mix;
-    return {
-        r: light_color.r * imix + bounce.r * mix,
-        g: light_color.g * imix + bounce.g * mix,
-        b: light_color.b * imix + bounce.b * mix
-    };
+    return bounce;
 }
 
 function getRayForScreenCoordinates(pos: Pos): Ray3D {
@@ -328,23 +329,27 @@ function getRayForScreenCoordinates(pos: Pos): Ray3D {
 
 // Generate scene
 const RADIUS = 50;
-const CIRCLES: Array<{center: Vec3D; radius: number}> = [];
+const CIRCLES: Array<ICircle> = [];
 repeat(5, (i) => {
     repeat(5, (j) => {
         const x = RADIUS + (RADIUS + 5) * i * 2;
         const y = RADIUS + (RADIUS / 2) * j * 2;
         const z = ((60 * j) + 60);
         CIRCLES.push({
+            type: "circle",
             center: new Vec3D(x, y, z),
             radius: RADIUS
         });
     });
 });
+const LIGHTS: Array<ILight> = [
+    { type: "light", center: new Vec3D(300, 400, 300), intensity: 100, radius: 40 },
+    { type: "light", center: new Vec3D(100, 400, 300), intensity: 100, radius: 20 },
+];
 const SCENE: IScene = {
-    circles: CIRCLES,
-    lights: [
-        { center: new Vec3D(300, 400, 300), intensity: 100 },
-        { center: new Vec3D(100, 400, 300), intensity: 100 },
+    objects: [
+        ... CIRCLES,
+        ... LIGHTS
     ]
 };
 
