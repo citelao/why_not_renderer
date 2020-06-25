@@ -1,4 +1,5 @@
 import Vec3D from "./Vec3D";
+import Ray3D from "./Ray3D";
 
 const EPSILON = 0.0008;
 
@@ -77,16 +78,16 @@ interface ICollision {
     normal: Vec3D;
 }
 
-function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): ICollision[] {
-    const planeNormal = dir.inverse();
-    const rayTraversal = ((sphereCenter.minus(pos)).dot(planeNormal) / dir.dot(planeNormal));
+function intersectSphere(ray: Ray3D, sphereCenter: Vec3D, radius: number): ICollision[] {
+    const planeNormal = ray.dir.inverse();
+    const rayTraversal = ((sphereCenter.minus(ray.pt)).dot(planeNormal) / ray.dir.dot(planeNormal));
 
     if (rayTraversal < 0) {
         // Sphere is behind.
         return [];
     }
 
-    const planeCollision = pos.plus(dir.times(rayTraversal));
+    const planeCollision = ray.pt.plus(ray.dir.times(rayTraversal));
 
     const dist = planeCollision.minus(sphereCenter).magnitude();
 
@@ -100,7 +101,7 @@ function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: nu
     // plane collision point.
     const offset = Math.sqrt((radius * radius) - (dist * dist));
     // console.log(offset);
-    const offsetRay = dir.times(offset);
+    const offsetRay = ray.dir.times(offset);
 
     if (radius - dist < EPSILON) {
         // This is close enough to a glancing blow just to return one
@@ -135,7 +136,7 @@ interface IScene {
     circles: Array<ICircle>;
 }
 
-function collideRay(scene: IScene, pt: Vec3D, dir: Vec3D): Array<{
+function collideRay(scene: IScene, ray: Ray3D): Array<{
     circle: ICircle,
     collision: ICollision
 }> {
@@ -144,7 +145,7 @@ function collideRay(scene: IScene, pt: Vec3D, dir: Vec3D): Array<{
         .map((c) => {
             return {
                 circle: c,
-                collisions: intersectSphere(pt, dir, c.center, c.radius)
+                collisions: intersectSphere(ray, c.center, c.radius)
             };
         })
         .filter((res) => res.collisions.length !== 0)
@@ -158,8 +159,8 @@ function collideRay(scene: IScene, pt: Vec3D, dir: Vec3D): Array<{
             };
         })), [])
         .sort((a, b): number => {
-            const depthA = a.collision.point.minus(pt).magnitude();
-            const depthB = b.collision.point.minus(pt).magnitude();
+            const depthA = a.collision.point.minus(ray.pt).magnitude();
+            const depthB = b.collision.point.minus(ray.pt).magnitude();
 
             return depthA - depthB;
         });
@@ -176,9 +177,9 @@ function normalToColor(normal: Vec3D): Color {
     }
 }
 
-function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
+function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     // Get collisions.
-    const collisions = collideRay(scene, pt, dir);
+    const collisions = collideRay(scene, ray);
 
     if (collisions.length > 0) {
         const lastCollision = collisions[0];
@@ -194,8 +195,12 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
             };
         }
 
-        const bounceNorm = dir.bounceNormal(lastCollision.collision.normal);
+        const bounceNorm = ray.dir.bounceNormal(lastCollision.collision.normal);
         const newPt: Vec3D = lastCollision.collision.point;
+        const newRay = Ray3D.Create({
+            pt: newPt,
+            dir: bounceNorm
+        });
 
         // return normalToColor(bounceNorm);
         // return {
@@ -205,8 +210,7 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
         // }
 
         const bounce = cast(SCENE,
-            newPt,
-            bounceNorm,
+            newRay,
             iteration + 1);
 
         return bounce;
@@ -221,7 +225,7 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
     return BLACK;
 }
 
-function getRayForScreenCoordinates(pos: Pos): { pt: Vec3D, dir: Vec3D } {
+function getRayForScreenCoordinates(pos: Pos): Ray3D {
     // Take a position on the camera plane and convert to a vector.
     // TODO frustrum.
     const pt: Vec3D = Vec3D.Create({
@@ -236,10 +240,10 @@ function getRayForScreenCoordinates(pos: Pos): { pt: Vec3D, dir: Vec3D } {
         z: 1
     });
 
-    return {
+    return Ray3D.Create({
         pt,
         dir
-    };
+    });
 }
 
 // Generate scene
@@ -266,8 +270,8 @@ repeat(WIDTH, (x) => {
 
         // Take a position on the camera plane and convert to a vector.
         // TODO frustrum.
-        const { pt, dir } = getRayForScreenCoordinates(pos);
-        setPixel(data, pos, cast(SCENE, pt, dir));
+        const ray = getRayForScreenCoordinates(pos);
+        setPixel(data, pos, cast(SCENE, ray));
     })
 })
 
@@ -292,20 +296,24 @@ canvas.addEventListener("mousemove", function (e) {
       y: e.clientY - rect.top
     };
 
-    const { pt, dir } = getRayForScreenCoordinates(pos);
+    const ray = getRayForScreenCoordinates(pos);
 
-    const collisions = collideRay(SCENE, pt, dir);
+    const collisions = collideRay(SCENE, ray);
     if (collisions.length === 0) {
         return;
     }
 
     // const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
 
-    const bounceNorm = dir.bounceNormal(collisions[0].collision.normal).normalized();
+    const bounceNorm = ray.dir.bounceNormal(collisions[0].collision.normal).normalized();
     const newPt: Vec3D = collisions[0].collision.point.plus(bounceNorm);
-    
+    const newRay = Ray3D.Create({
+        pt: newPt,
+        dir: bounceNorm
+    });
+
     // const res = bounceNorm;
-    const collisions2 = collideRay(SCENE, newPt, bounceNorm);
+    const collisions2 = collideRay(SCENE, newRay);
     // const res = newNorm;
     const res = (collisions2.length === 0)
         ? "NO"
