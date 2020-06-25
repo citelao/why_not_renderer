@@ -97,22 +97,7 @@ function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: nu
     return intersections;
 }
 
-function render(position: Pos): Color {
-    // Take a position on the camera plane and convert to a vector.
-
-    // TODO frustrum.
-    const pt: Vec3D = Vec3D.Create({
-        x: position.x,
-        y: position.y,
-        z: 0
-    });
-
-    const dir: Vec3D = Vec3D.Create({
-        x: 0,
-        y: 0,
-        z: 1
-    });
-    
+function render(pt: Vec3D, dir: Vec3D): Color {
     const RADIUS = 50;
     const CIRCLES: Array<{center: Vec3D; radius: number}> = [];
     repeat(5, (i) => {
@@ -157,7 +142,22 @@ function render(position: Pos): Color {
 repeat(WIDTH, (x) => {
     repeat(HEIGHT, (y) => {
         const pos: Pos = { x, y };
-        setPixel(data, pos, render(pos));
+
+        // Take a position on the camera plane and convert to a vector.
+        // TODO frustrum.
+        const pt: Vec3D = Vec3D.Create({
+            x: pos.x,
+            y: pos.y,
+            z: 0
+        });
+
+        const dir: Vec3D = Vec3D.Create({
+            x: 0,
+            y: 0,
+            z: 1
+        });
+
+        setPixel(data, pos, render(pt, dir));
     })
 })
 
