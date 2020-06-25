@@ -1,5 +1,7 @@
 import Vec3D, { NormalizedVec3D } from "./Vec3D";
 
+const EPSILON = 0.0008;
+
 console.log("Loading renderer!");
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
@@ -24,6 +26,18 @@ type Color = {
     a?: number;
 }
 
+const WHITE: Color = {
+    r: COLOR_MAX,
+    g: COLOR_MAX,
+    b: COLOR_MAX
+};
+
+const BLACK: Color = {
+    r: 0,
+    g: 0,
+    b: 0
+};
+
 function setPixel(data: Uint8ClampedArray, pos: Pos, color: Color) {
     // TODO enforce within bounds.
 
@@ -42,18 +56,40 @@ function repeat(times: number, fn: (index: number) => void) {
     }
 }
 
-function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): false | number {
+function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): Vec3D[] {
     const planeNormal = dir.inverse();
     const rayTraversal = ((sphereCenter.minus(pos)).dot(planeNormal) / dir.dot(planeNormal));
     const planeCollision = pos.plus(dir.times(rayTraversal));
 
     const dist = planeCollision.minus(sphereCenter).magnitude();
 
-    if (dist < radius) {
-        return dist;
+    // If the distance is farther than the radius, we did not intersect the
+    // sphere.
+    if (dist > radius) {
+        return [];
     }
 
-    return false;
+    // Use the pythagorean theorem to get the intersections' offsets from the
+    // plane collision point.
+    const offset = Math.sqrt(dist * dist + radius * radius);
+    const offsetRay = dir.times(offset);
+
+    if (radius - dist < EPSILON) {
+        // This is close enough to a glancing blow just to return one
+        // intersection:
+        return [
+            planeCollision
+        ];
+    }
+
+    // If we get here, there are two intersections: before and after the normal
+    // plane.
+    const intersections = [
+        planeCollision.minus(offsetRay),
+        planeCollision.plus(offsetRay)
+    ];
+
+    return intersections;
 }
 
 function render(position: Pos): Color {
@@ -79,21 +115,33 @@ function render(position: Pos): Color {
         { center: new Vec3D(210, 200, 90), radius: RADIUS },
     ];
 
+    // Get collisions.
+    // TODO sorted by Z-order.
     const collisions = CIRCLES
         .map((c) => intersectSphere(pt, dir, c.center, c.radius))
-        .filter((res) => res !== false)
-        .sort() as number[];
+        .filter((res) => res.length !== 0)
+        .reduce((accum, val) => accum.concat(val), [])
+        .sort((a, b): number => {
+            const depthA = a.minus(pt).magnitude();
+            const depthB = b.minus(pt).magnitude();
+
+            return depthA - depthB;
+        });
 
     if (collisions.length > 0) {
         const lastCollision = collisions[0];
+        const depth = lastCollision.minus(pt).magnitude();
+
+        const color = (1 - (depth / 200)) * COLOR_MAX;
+
         return {
-            r: 0,
-            g: ((1 - (lastCollision / RADIUS)) * 0.5 + 0.5) * COLOR_MAX, 
-            b: 0
+            r: color,
+            g: color, 
+            b: color
         };
     }
 
-    return { r: position.x / WIDTH * COLOR_MAX, g: 0, b: position.y / HEIGHT * COLOR_MAX };
+    return BLACK;
 }
 
 repeat(WIDTH, (x) => {
