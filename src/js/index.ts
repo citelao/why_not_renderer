@@ -80,6 +80,12 @@ interface ICollision {
 function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): ICollision[] {
     const planeNormal = dir.inverse();
     const rayTraversal = ((sphereCenter.minus(pos)).dot(planeNormal) / dir.dot(planeNormal));
+
+    if (rayTraversal < 0) {
+        // Sphere is behind.
+        return [];
+    }
+
     const planeCollision = pos.plus(dir.times(rayTraversal));
 
     const dist = planeCollision.minus(sphereCenter).magnitude();
@@ -176,7 +182,7 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
 
     if (collisions.length > 0) {
         const lastCollision = collisions[0];
-        const depth = lastCollision.collision.point.minus(pt).magnitude();
+        // const depth = lastCollision.collision.point.minus(pt).magnitude();
         const color = COLOR_MAX; //Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
 
         const MAX_MAGNITUDE = 1;
@@ -188,21 +194,22 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
             };
         }
 
-        // const newPt: Vec3D = lastCollision.collision.plus(newNorm);
         const bounceNorm = dir.bounceNormal(lastCollision.collision.normal);
+        const newPt: Vec3D = lastCollision.collision.point;
 
-        return normalToColor(bounceNorm);
+        // return normalToColor(bounceNorm);
         // return {
         //     r: bounceNorm.x * COLOR_MAX,
         //     g: bounceNorm.y * COLOR_MAX,
         //     b: bounceNorm.z * COLOR_MAX,
         // }
 
-        // const bounce = cast(newPt,
-        //     newNorm,
-        //     iteration + 1);
+        const bounce = cast(SCENE,
+            newPt,
+            bounceNorm,
+            iteration + 1);
 
-        // return bounce;
+        return bounce;
 
         return {
             r: color,
@@ -242,7 +249,7 @@ repeat(5, (i) => {
     repeat(5, (j) => {
         const x = RADIUS + (RADIUS + 5) * i * 2;
         const y = RADIUS + (RADIUS / 2) * j * 2;
-        const z = (60 * j) + 60;
+        const z = ((60 * j) + 60);
         CIRCLES.push({
             center: new Vec3D(x, y, z),
             radius: RADIUS
@@ -292,20 +299,23 @@ canvas.addEventListener("mousemove", function (e) {
         return;
     }
 
-    const newNorm: Vec3D = collisions[0].collision.normal;
-    const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
+    // const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
 
     const bounceNorm = dir.bounceNormal(collisions[0].collision.normal).normalized();
-    const res = bounceNorm;
-    // const collisions2 = collideRay(SCENE, newPt, newNorm);
+    const newPt: Vec3D = collisions[0].collision.point.plus(bounceNorm);
+    
+    // const res = bounceNorm;
+    const collisions2 = collideRay(SCENE, newPt, bounceNorm);
     // const res = newNorm;
-    // // const res = (collisions2.length === 0)
-    // //     ? "NO"
-    // //     : collisions2[0].circle.center;
+    const res = (collisions2.length === 0)
+        ? "NO"
+        : collisions2[0].circle.center;
 
     console.log(
         // cast(SCENE, pt, dir),
         collisions[0].circle.center,
-        res
+        res,
+        // collisions[0].collision.point,
+        // collisions2[0].collision.point
     );
 });
