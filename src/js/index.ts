@@ -56,6 +56,10 @@ function repeat(times: number, fn: (index: number) => void) {
     }
 }
 
+function flatten<T>(array: Array<Array<T>>): Array<T> {
+    return array.reduce((accum, val) => accum.concat(val), []);
+}
+
 function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: number): Vec3D[] {
     const planeNormal = dir.inverse();
     const rayTraversal = ((sphereCenter.minus(pos)).dot(planeNormal) / dir.dot(planeNormal));
@@ -71,14 +75,15 @@ function intersectSphere(pos: Vec3D, dir: Vec3D, sphereCenter: Vec3D, radius: nu
 
     // Use the pythagorean theorem to get the intersections' offsets from the
     // plane collision point.
-    const offset = Math.sqrt(dist * dist + radius * radius);
+    const offset = Math.sqrt((radius * radius) - (dist * dist));
+    // console.log(offset);
     const offsetRay = dir.times(offset);
 
     if (radius - dist < EPSILON) {
         // This is close enough to a glancing blow just to return one
         // intersection:
         return [
-            planeCollision
+            // planeCollision
         ];
     }
 
@@ -109,14 +114,20 @@ function render(position: Pos): Color {
     });
     
     const RADIUS = 50;
-    const CIRCLES: Array<{center: Vec3D; radius: number}> = [
-        { center: new Vec3D(200, 150, 40), radius: RADIUS },
-        { center: new Vec3D(200, 200, 40), radius: RADIUS },
-        { center: new Vec3D(210, 200, 90), radius: RADIUS },
-    ];
+    const CIRCLES: Array<{center: Vec3D; radius: number}> = [];
+    repeat(5, (i) => {
+        repeat(5, (j) => {
+            const x = RADIUS + (RADIUS + 5) * i * 2;
+            const y = RADIUS + (RADIUS / 3) * j * 2;
+            const z = (60 * j) + 60;
+            CIRCLES.push({
+                center: new Vec3D(x, y, z),
+                radius: RADIUS
+            });
+        });
+    });
 
     // Get collisions.
-    // TODO sorted by Z-order.
     const collisions = CIRCLES
         .map((c) => intersectSphere(pt, dir, c.center, c.radius))
         .filter((res) => res.length !== 0)
@@ -131,8 +142,7 @@ function render(position: Pos): Color {
     if (collisions.length > 0) {
         const lastCollision = collisions[0];
         const depth = lastCollision.minus(pt).magnitude();
-
-        const color = (1 - (depth / 200)) * COLOR_MAX;
+        const color = Math.min(COLOR_MAX, (1 - (depth / 300)) * COLOR_MAX);
 
         return {
             r: color,
