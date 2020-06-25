@@ -303,8 +303,20 @@ repeat(5, (i) => {
         });
     });
 });
+repeat(5, (i) => {
+    repeat(5, (j) => {
+        const x = RADIUS + (RADIUS + 5) * i * 2 + 20;
+        const y = RADIUS + (RADIUS / 2) * j * 2 + 370;
+        const z = ((60 * j) + 60);
+        CIRCLES.push({
+            type: "circle",
+            center: new Vec3D(x, y, z),
+            radius: RADIUS
+        });
+    });
+});
 const LIGHTS: Array<ILight> = [
-    { type: "light", center: new Vec3D(600, 800, 300), intensity: 100, radius: 300 },
+    { type: "light", center: new Vec3D(600, 650, 300), intensity: 100, radius: 300 },
     { type: "light", center: new Vec3D(100, 400, 300), intensity: 100, radius: 20 },
 ];
 const SCENE: IScene = {
