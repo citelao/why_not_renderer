@@ -132,8 +132,13 @@ interface ICircle {
     center: Vec3D;
     radius: number;
 }
+interface ILight {
+    center: Vec3D;
+    intensity: number;
+}
 interface IScene {
     circles: Array<ICircle>;
+    lights: Array<ILight>;
 }
 
 function collideRay(scene: IScene, ray: Ray3D): Array<{
@@ -261,7 +266,10 @@ repeat(5, (i) => {
     });
 });
 const SCENE: IScene = {
-    circles: CIRCLES
+    circles: CIRCLES,
+    lights: [
+        { center: new Vec3D(0, 200, 200), intensity: 100 }
+    ]
 };
 
 repeat(WIDTH, (x) => {
