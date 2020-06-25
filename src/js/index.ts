@@ -133,10 +133,17 @@ function intersectSphere(ray: Ray3D, sphereCenter: Vec3D, radius: number): IColl
     return intersections;
 }
 
+interface IMaterial {
+    /** Number from 0-1 saying how much to spread bounce rays. Proxy for
+     * reflectance. */
+    spread: number;
+}
+
 interface ICircle {
     type: "circle";
     center: Vec3D;
     radius: number;
+    material: IMaterial;
 }
 interface ILight {
     type: "light";
@@ -242,7 +249,7 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     repeat(BOUNCE_COUNT, (i) => {
         const perturbedRay = Ray3D.Create({
             pt: newRay.pt,
-            dir: perturb(newRay.dir, SPREAD_AMOUNT)
+            dir: perturb(newRay.dir, (lastCollision.object as ICircle).material.spread)
         })
         bounces.push(cast(SCENE,
             perturbedRay,
@@ -295,7 +302,10 @@ repeat(5, (i) => {
         CIRCLES.push({
             type: "circle",
             center: new Vec3D(x, y, z),
-            radius: RADIUS
+            radius: RADIUS,
+            material: {
+                spread: (j / 5)
+            }
         });
     });
 });
@@ -307,7 +317,10 @@ repeat(5, (i) => {
         CIRCLES.push({
             type: "circle",
             center: new Vec3D(x, y, z),
-            radius: RADIUS
+            radius: RADIUS,
+            material: {
+                spread: (j / 5)
+            }
         });
     });
 });
