@@ -38,6 +38,18 @@ const BLACK: Color = {
     b: 0
 };
 
+const RED: Color = {
+    r: COLOR_MAX,
+    g: 0,
+    b: 0
+};
+
+const GREEN: Color = {
+    r: 0,
+    g: COLOR_MAX,
+    b: 0
+};
+
 function setPixel(data: Uint8ClampedArray, pos: Pos, color: Color) {
     // TODO enforce within bounds.
 
@@ -152,7 +164,7 @@ function cast(scene: IScene, pt: Vec3D, dir: Vec3D, iteration = 0): Color {
             };
         }
 
-        const newNorm: Vec3D = lastCollision.circle.center.minus(lastCollision.collision).normalized();
+        const newNorm: Vec3D = collisions[0].collision.minus(collisions[0].circle.center).normalized();
         const newPt: Vec3D = lastCollision.collision.plus(newNorm);
 
         return {
@@ -227,6 +239,18 @@ repeat(WIDTH, (x) => {
     })
 })
 
+// Draw a scale!
+const SCALE_SIZE = 50;
+const SCALE_LOC: Pos = { x: WIDTH - 100, y: HEIGHT - 100 };
+repeat(SCALE_SIZE, (x) => {
+    const pos: Pos = { x: SCALE_LOC.x + x, y: SCALE_LOC.y };
+    setPixel(data, pos, RED);
+});
+repeat(SCALE_SIZE, (y) => {
+    const pos: Pos = { x: SCALE_LOC.x, y: SCALE_LOC.y + y };
+    setPixel(data, pos, GREEN);
+});
+
 ctx.putImageData(imageData, 0, 0);
 
 canvas.addEventListener("mousemove", function (e) {
@@ -243,8 +267,18 @@ canvas.addEventListener("mousemove", function (e) {
         return;
     }
 
+    const newNorm: Vec3D = collisions[0].collision.minus(collisions[0].circle.center).normalized();
+    const newPt: Vec3D = collisions[0].collision.plus(newNorm.times(1));
+
+    const collisions2 = collideRay(SCENE, newPt, newNorm);
+    const res = newNorm;
+    // const res = (collisions2.length === 0)
+    //     ? "NO"
+    //     : collisions2[0].circle.center;
+
     console.log(
         // cast(SCENE, pt, dir),
-        collisions[0].circle.center
+        collisions[0].circle.center,
+        res
     );
 });
