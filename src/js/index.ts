@@ -314,30 +314,44 @@ const SCENE: IScene = {
     ]
 };
 
-repeat(WIDTH, (x) => {
-    repeat(HEIGHT, (y) => {
-        const pos: Pos = { x, y };
+async function breathe(): Promise<number> {
+    return new Promise<number>(requestAnimationFrame);
+}
 
-        // Take a position on the camera plane and convert to a vector.
-        // TODO frustrum.
-        const ray = getRayForScreenCoordinates(pos);
-        setPixel(data, pos, cast(SCENE, ray));
-    })
-})
+async function run() {
+    for (let x = 0; x < WIDTH; x++) {
+        for (let y = 0; y < HEIGHT; y++) {
+            const pos: Pos = { x, y };
+    
+            // Take a position on the camera plane and convert to a vector.
+            // TODO frustrum.
+            const ray = getRayForScreenCoordinates(pos);
+            setPixel(data, pos, cast(SCENE, ray));
+        }
 
-// Draw a scale!
-const SCALE_SIZE = 50;
-const SCALE_LOC: Pos = { x: WIDTH - 100, y: HEIGHT - 100 };
-repeat(SCALE_SIZE, (x) => {
-    const pos: Pos = { x: SCALE_LOC.x + x, y: SCALE_LOC.y };
-    setPixel(data, pos, RED);
-});
-repeat(SCALE_SIZE, (y) => {
-    const pos: Pos = { x: SCALE_LOC.x, y: SCALE_LOC.y + y };
-    setPixel(data, pos, GREEN);
-});
+        ctx.putImageData(imageData, 0, 0);
 
-ctx.putImageData(imageData, 0, 0);
+        await breathe();
+    }
+
+    // Draw a scale!
+    const SCALE_SIZE = 50;
+    const SCALE_LOC: Pos = { x: WIDTH - 100, y: HEIGHT - 100 };
+    repeat(SCALE_SIZE, (x) => {
+        const pos: Pos = { x: SCALE_LOC.x + x, y: SCALE_LOC.y };
+        setPixel(data, pos, RED);
+    });
+    repeat(SCALE_SIZE, (y) => {
+        const pos: Pos = { x: SCALE_LOC.x, y: SCALE_LOC.y + y };
+        setPixel(data, pos, GREEN);
+    });
+
+}
+
+run()
+    .catch((error) => {
+        console.error(error);
+    });
 
 // render_type_radios.forEach((r) => {
 //     (r as HTMLInputElement).addEventListener("change", function (e) {
@@ -368,27 +382,27 @@ canvas.addEventListener("mousemove", function (e) {
         return;
     }
 
-    // const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
+    // // const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
 
-    const bounceNorm = ray.dir.bounceNormal(collisions[0].collision.normal).normalized();
-    const newPt: Vec3D = collisions[0].collision.point.plus(bounceNorm);
-    const newRay = Ray3D.Create({
-        pt: newPt,
-        dir: bounceNorm
-    });
+    // const bounceNorm = ray.dir.bounceNormal(collisions[0].collision.normal).normalized();
+    // const newPt: Vec3D = collisions[0].collision.point.plus(bounceNorm);
+    // const newRay = Ray3D.Create({
+    //     pt: newPt,
+    //     dir: bounceNorm
+    // });
 
-    // const res = bounceNorm;
-    const collisions2 = collideRay(SCENE, newRay);
-    // const res = newNorm;
-    const res = (collisions2.length === 0)
-        ? "NO"
-        : collisions2[0].circle.center;
+    // // const res = bounceNorm;
+    // const collisions2 = collideRay(SCENE, newRay);
+    // // const res = newNorm;
+    // const res = (collisions2.length === 0)
+    //     ? "NO"
+    //     : collisions2[0].circle.center;
 
-    console.log(
-        // cast(SCENE, pt, dir),
-        collisions[0].circle.center,
-        res,
-        // collisions[0].collision.point,
-        // collisions2[0].collision.point
-    );
+    // console.log(
+    //     // cast(SCENE, pt, dir),
+    //     collisions[0].circle.center,
+    //     res,
+    //     // collisions[0].collision.point,
+    //     // collisions2[0].collision.point
+    // );
 });
