@@ -54,6 +54,17 @@ export default class PFM {
             : "big";
 
         console.log(`Endianness: ${endianness}`);
+
+        const firstNewLine = headerString.indexOf(PFM_NEWLINE);
+        const secondNewLine = headerString.indexOf(PFM_NEWLINE, firstNewLine + 1);
+        const thirdNewLine = headerString.indexOf(PFM_NEWLINE, secondNewLine + 1);
+        console.log([
+            firstNewLine,
+            secondNewLine,
+            thirdNewLine
+        ]);
+
+        const dataStartIndex = thirdNewLine + 1;
     }
 
     public get(x: number, y: number): Color {
