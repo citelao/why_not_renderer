@@ -20,9 +20,14 @@ export default class Lightmap {
             y: this.image.height / 2
         });
 
+        // This works for double width images on the horizontal plane, somehow.
+        // const loc = Point2D.Create({
+        //     x: center.x + (dir.x * ((this.image.width - 1) / 2)),
+        //     y: center.y + (dir.y * ((this.image.height - 1) / 2))
+        // });
         const loc = Point2D.Create({
-            x: center.x + (dir.x * ((this.image.width - 1) / 2)),
-            y: center.y + (dir.y * ((this.image.height - 1) / 2))
+            x: center.x + (dir.x * ((this.image.width - 1) / 4)),
+            y: center.y + (dir.y * ((this.image.height - 1) / 4))
         });
 
         return this.image.get(loc.x, loc.y);
