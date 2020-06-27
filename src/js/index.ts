@@ -246,19 +246,21 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
 }
 
 function getRayForScreenCoordinates(pos: Point2D): Ray3D {
+    // Simple, ad-hoc projection start point. Very bad.
+    const START_POINT = Vec3D.Create({
+        x: WIDTH / 2,
+        y: HEIGHT / 2,
+        z: -500
+    });
+
     // Take a position on the camera plane and convert to a vector.
-    // TODO frustrum.
     const pt: Vec3D = Vec3D.Create({
         x: pos.x,
         y: pos.y,
         z: 0
     });
 
-    const dir: Vec3D = Vec3D.Create({
-        x: 0,
-        y: 0,
-        z: 1
-    });
+    const dir: Vec3D = pt.minus(START_POINT).normalized();
 
     return Ray3D.Create({
         pt,
