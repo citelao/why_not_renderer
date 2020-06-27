@@ -1,6 +1,8 @@
 import Vec3D from "./Vec3D";
 import Ray3D from "./Ray3D";
 import Color, { COLOR_MAX, BLACK, WHITE, RED, GREEN } from "./Color";
+import Point2D from "./Point2D";
+import Lightmap from "./Lightmap";
 import PFM from "./PFM";
 
 const EPSILON = 0.0008;
@@ -21,12 +23,7 @@ const HEIGHT = 512;
 const imageData = ctx.createImageData(WIDTH, HEIGHT);
 const data = imageData.data;
 
-type Pos = {
-    x: number;
-    y: number;
-}
-
-function setPixel(data: Uint8ClampedArray, pos: Pos, color: Color) {
+function setPixel(data: Uint8ClampedArray, pos: Point2D, color: Color) {
     // TODO enforce within bounds.
 
     const pixelsOffset = pos.y * WIDTH + pos.x;
@@ -126,7 +123,7 @@ interface ILight {
 type ISceneObject = ICircle | ILight;
 interface IScene {
     objects: Array<ISceneObject>;
-    lightMap?: PFM;
+    lightMap?: Lightmap;
 }
 
 /** Send a ray through the scene for collisions. Sorted by distance to ray start. */
@@ -183,9 +180,7 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     // If we had no collisions, return black or the lookup in the light map.
     // TODO actually lookup based on ray dir.
     const defaultColor: Color = (scene.lightMap)
-        ? scene.lightMap.get(
-            Math.max(0, Math.min(ray.pt.x, scene.lightMap.width - 1)),
-            Math.max(0, Math.min(ray.pt.y, scene.lightMap.height - 1)))
+        ? scene.lightMap.get(ray.dir.normalized())
         : BLACK;
     // console.log(defaultColor);
     if (collisions.length === 0) {
@@ -250,7 +245,7 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     return bounce;
 }
 
-function getRayForScreenCoordinates(pos: Pos): Ray3D {
+function getRayForScreenCoordinates(pos: Point2D): Ray3D {
     // Take a position on the camera plane and convert to a vector.
     // TODO frustrum.
     const pt: Vec3D = Vec3D.Create({
@@ -324,12 +319,12 @@ async function run() {
             ... CIRCLES,
             ... LIGHTS
         ],
-        lightMap: await PFM.Fetch("./img/beach_probe.pfm")
+        lightMap: new Lightmap(await PFM.Fetch("./img/beach_probe.pfm"))
     };
 
     for (let x = 0; x < WIDTH; x++) {
         for (let y = 0; y < HEIGHT; y++) {
-            const pos: Pos = { x, y };
+            const pos: Point2D = Point2D.Create({ x, y });
     
             // Take a position on the camera plane and convert to a vector.
             // TODO frustrum.
@@ -344,13 +339,13 @@ async function run() {
 
     // Draw a scale!
     const SCALE_SIZE = 50;
-    const SCALE_LOC: Pos = { x: WIDTH - 100, y: HEIGHT - 100 };
+    const SCALE_LOC: Point2D = Point2D.Create({ x: WIDTH - 100, y: HEIGHT - 100 });
     repeat(SCALE_SIZE, (x) => {
-        const pos: Pos = { x: SCALE_LOC.x + x, y: SCALE_LOC.y };
+        const pos: Point2D = Point2D.Create({ x: SCALE_LOC.x + x, y: SCALE_LOC.y });
         setPixel(data, pos, RED);
     });
     repeat(SCALE_SIZE, (y) => {
-        const pos: Pos = { x: SCALE_LOC.x, y: SCALE_LOC.y + y };
+        const pos: Point2D = Point2D.Create({ x: SCALE_LOC.x, y: SCALE_LOC.y + y });
         setPixel(data, pos, GREEN);
     });
 
