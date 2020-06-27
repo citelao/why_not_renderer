@@ -1,5 +1,6 @@
 import Vec3D from "./Vec3D";
 import Ray3D from "./Ray3D";
+import Color, { COLOR_MAX, BLACK, WHITE, RED, GREEN } from "./Color";
 
 const EPSILON = 0.0008;
 
@@ -23,38 +24,6 @@ type Pos = {
     x: number;
     y: number;
 }
-
-const COLOR_MAX = 255;
-type Color = {
-    r: number;
-    g: number;
-    b: number;
-    a?: number;
-}
-
-const WHITE: Color = {
-    r: COLOR_MAX,
-    g: COLOR_MAX,
-    b: COLOR_MAX
-};
-
-const BLACK: Color = {
-    r: 0,
-    g: 0,
-    b: 0
-};
-
-const RED: Color = {
-    r: COLOR_MAX,
-    g: 0,
-    b: 0
-};
-
-const GREEN: Color = {
-    r: 0,
-    g: COLOR_MAX,
-    b: 0
-};
 
 function setPixel(data: Uint8ClampedArray, pos: Pos, color: Color) {
     // TODO enforce within bounds.
