@@ -1,6 +1,7 @@
 import Vec3D from "./Vec3D";
 import Ray3D from "./Ray3D";
 import Color, { COLOR_MAX, BLACK, WHITE, RED, GREEN } from "./Color";
+import PFM from "./PFM";
 
 const EPSILON = 0.0008;
 
@@ -125,6 +126,7 @@ interface ILight {
 type ISceneObject = ICircle | ILight;
 interface IScene {
     objects: Array<ISceneObject>;
+    lightMap?: PFM;
 }
 
 /** Send a ray through the scene for collisions. Sorted by distance to ray start. */
@@ -226,7 +228,7 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
             pt: newRay.pt,
             dir: perturb(newRay.dir, (lastCollision.object as ICircle).material.spread)
         })
-        bounces.push(cast(SCENE,
+        bounces.push(cast(scene,
             perturbedRay,
             iteration + 1));
     });
@@ -267,61 +269,62 @@ function getRayForScreenCoordinates(pos: Pos): Ray3D {
     });
 }
 
-// Generate scene
-const RADIUS = 50;
-const CIRCLES: Array<ICircle> = [];
-repeat(5, (i) => {
-    repeat(5, (j) => {
-        const x = RADIUS + (RADIUS + 5) * i * 2;
-        const y = RADIUS + (RADIUS / 2) * j * 2;
-        const z = ((60 * j) + 60);
-        CIRCLES.push({
-            type: "circle",
-            center: new Vec3D(x, y, z),
-            radius: RADIUS,
-            material: {
-                spread: (j / 10) + 0.5,
-                intrinsicColor: {
-                    r: i * 50 + 10,
-                    g: (j + i) * 20 + 50,
-                    b: j * 70 + 10
-                }
-            }
-        });
-    });
-});
-repeat(5, (i) => {
-    repeat(5, (j) => {
-        const x = RADIUS + (RADIUS + 5) * i * 2 + 20;
-        const y = RADIUS + (RADIUS / 2) * j * 2 + 370;
-        const z = ((60 * j) + 60);
-        CIRCLES.push({
-            type: "circle",
-            center: new Vec3D(x, y, z),
-            radius: RADIUS,
-            material: {
-                spread: (j / 5),
-                intrinsicColor: WHITE
-            }
-        });
-    });
-});
-const LIGHTS: Array<ILight> = [
-    { type: "light", center: new Vec3D(600, 650, 300), intensity: 100, radius: 300 },
-    { type: "light", center: new Vec3D(100, 400, 300), intensity: 100, radius: 20 },
-];
-const SCENE: IScene = {
-    objects: [
-        ... CIRCLES,
-        ... LIGHTS
-    ]
-};
-
 async function breathe(): Promise<number> {
     return new Promise<number>(requestAnimationFrame);
 }
 
 async function run() {
+    // Generate scene
+    const RADIUS = 50;
+    const CIRCLES: Array<ICircle> = [];
+    repeat(5, (i) => {
+        repeat(5, (j) => {
+            const x = RADIUS + (RADIUS + 5) * i * 2;
+            const y = RADIUS + (RADIUS / 2) * j * 2;
+            const z = ((60 * j) + 60);
+            CIRCLES.push({
+                type: "circle",
+                center: new Vec3D(x, y, z),
+                radius: RADIUS,
+                material: {
+                    spread: (j / 10) + 0.5,
+                    intrinsicColor: {
+                        r: i * 50 + 10,
+                        g: (j + i) * 20 + 50,
+                        b: j * 70 + 10
+                    }
+                }
+            });
+        });
+    });
+    repeat(5, (i) => {
+        repeat(5, (j) => {
+            const x = RADIUS + (RADIUS + 5) * i * 2 + 20;
+            const y = RADIUS + (RADIUS / 2) * j * 2 + 370;
+            const z = ((60 * j) + 60);
+            CIRCLES.push({
+                type: "circle",
+                center: new Vec3D(x, y, z),
+                radius: RADIUS,
+                material: {
+                    spread: (j / 5),
+                    intrinsicColor: WHITE
+                }
+            });
+        });
+    });
+    const LIGHTS: Array<ILight> = [
+        { type: "light", center: new Vec3D(600, 650, 300), intensity: 100, radius: 300 },
+        { type: "light", center: new Vec3D(100, 400, 300), intensity: 100, radius: 20 },
+    ];
+    const SCENE: IScene = {
+        objects: [
+            ... CIRCLES,
+            ... LIGHTS
+        ],
+        lightMap: await PFM.Fetch("./img/beach_probe.pfm")
+    };
+
     for (let x = 0; x < WIDTH; x++) {
         for (let y = 0; y < HEIGHT; y++) {
             const pos: Pos = { x, y };
@@ -371,41 +374,41 @@ run()
 //     });
 // });
 
-canvas.addEventListener("mousemove", function (e) {
-    const rect = this.getBoundingClientRect();
-    const pos = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
+// canvas.addEventListener("mousemove", function (e) {
+//     const rect = this.getBoundingClientRect();
+//     const pos = {
+//       x: e.clientX - rect.left,
+//       y: e.clientY - rect.top
+//     };
 
-    const ray = getRayForScreenCoordinates(pos);
+//     const ray = getRayForScreenCoordinates(pos);
 
-    const collisions = collideRay(SCENE, ray);
-    if (collisions.length === 0) {
-        return;
-    }
+//     const collisions = collideRay(SCENE, ray);
+//     if (collisions.length === 0) {
+//         return;
+//     }
 
-    // // const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
+//     // // const newPt: Vec3D = collisions[0].collision.point.plus(newNorm.times(1));
 
-    // const bounceNorm = ray.dir.bounceNormal(collisions[0].collision.normal).normalized();
-    // const newPt: Vec3D = collisions[0].collision.point.plus(bounceNorm);
-    // const newRay = Ray3D.Create({
-    //     pt: newPt,
-    //     dir: bounceNorm
-    // });
+//     // const bounceNorm = ray.dir.bounceNormal(collisions[0].collision.normal).normalized();
+//     // const newPt: Vec3D = collisions[0].collision.point.plus(bounceNorm);
+//     // const newRay = Ray3D.Create({
+//     //     pt: newPt,
+//     //     dir: bounceNorm
+//     // });
 
-    // // const res = bounceNorm;
-    // const collisions2 = collideRay(SCENE, newRay);
-    // // const res = newNorm;
-    // const res = (collisions2.length === 0)
-    //     ? "NO"
-    //     : collisions2[0].circle.center;
+//     // // const res = bounceNorm;
+//     // const collisions2 = collideRay(SCENE, newRay);
+//     // // const res = newNorm;
+//     // const res = (collisions2.length === 0)
+//     //     ? "NO"
+//     //     : collisions2[0].circle.center;
 
-    // console.log(
-    //     // cast(SCENE, pt, dir),
-    //     collisions[0].circle.center,
-    //     res,
-    //     // collisions[0].collision.point,
-    //     // collisions2[0].collision.point
-    // );
-});
+//     // console.log(
+//     //     // cast(SCENE, pt, dir),
+//     //     collisions[0].circle.center,
+//     //     res,
+//     //     // collisions[0].collision.point,
+//     //     // collisions2[0].collision.point
+//     // );
+// });
