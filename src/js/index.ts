@@ -178,9 +178,14 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     // Get collisions.
     const collisions = collideRay(scene, ray);
 
-    // If we had no collisions, return black.
+    // If we had no collisions, return black or the lookup in the light map.
+    const defaultColor: Color = {
+        r: 50,
+        g: 20,
+        b: 30 + ray.dir.x * 100
+    };
     if (collisions.length === 0) {
-        return BLACK;
+        return defaultColor;
     }
 
     const lastCollision = collisions[0];
@@ -199,7 +204,7 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     // Stop if we've bounced too much!
     const MAX_BOUNCES = 3;
     if (iteration >= MAX_BOUNCES) {
-        return BLACK;
+        return defaultColor;
     }
 
     // Lights are immediate light sources
