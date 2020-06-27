@@ -246,7 +246,6 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     });
 
     const BOUNCE_COUNT = 5;
-    const SPREAD_AMOUNT = 0.8;
     const bounces: Color[] = [];
     repeat(BOUNCE_COUNT, (i) => {
         const perturbedRay = Ray3D.Create({
@@ -307,7 +306,7 @@ repeat(5, (i) => {
             center: new Vec3D(x, y, z),
             radius: RADIUS,
             material: {
-                spread: (j / 5),
+                spread: (j / 10) + 0.5,
                 intrinsicColor: {
                     r: i * 50 + 10,
                     g: (j + i) * 20 + 50,
