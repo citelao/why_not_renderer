@@ -358,7 +358,7 @@ async function run() {
 
 run()
     .catch((error) => {
-        console.error(error);
+        throw (error);
     });
 
 // render_type_radios.forEach((r) => {
