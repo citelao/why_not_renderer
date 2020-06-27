@@ -183,8 +183,11 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     // If we had no collisions, return black or the lookup in the light map.
     // TODO actually lookup based on ray dir.
     const defaultColor: Color = (scene.lightMap)
-        ? scene.lightMap.get(50, 50)
+        ? scene.lightMap.get(
+            Math.max(0, Math.min(ray.pt.x, scene.lightMap.width - 1)),
+            Math.max(0, Math.min(ray.pt.y, scene.lightMap.height - 1)))
         : BLACK;
+    // console.log(defaultColor);
     if (collisions.length === 0) {
         return defaultColor;
     }
