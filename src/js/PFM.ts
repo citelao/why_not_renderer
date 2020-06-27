@@ -84,10 +84,10 @@ export default class PFM {
         const FLOATS_PER_PIXEL = 3;
         const p = {
             x: Math.round(x),
-            y: (this.height - 1) - Math.round(y)
+            y: Math.round(y)
         };
         
-        const offset = (p.x + (p.y * this.width)) * BYTES_PER_FLOAT * FLOATS_PER_PIXEL;
+        const offset = (p.x + (((this.height - 1) - p.y) * this.width)) * BYTES_PER_FLOAT * FLOATS_PER_PIXEL;
 
         if (offset >= this.data.byteLength || offset < 0) {
             throw new Error(`Out of bounds! [${p.x}, ${p.y}] (${offset}) for [${this.width}, ${this.height}] (${this.data.byteLength})`);
