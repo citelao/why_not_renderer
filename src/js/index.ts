@@ -313,8 +313,8 @@ async function run() {
         });
     });
     const LIGHTS: Array<ILight> = [
-        { type: "light", center: new Vec3D(600, 650, 300), intensity: 100, radius: 300 },
-        { type: "light", center: new Vec3D(100, 400, 300), intensity: 100, radius: 20 },
+        // { type: "light", center: new Vec3D(600, 650, 300), intensity: 100, radius: 300 },
+        // { type: "light", center: new Vec3D(100, 400, 300), intensity: 100, radius: 20 },
     ];
     const SCENE: IScene = {
         objects: [
