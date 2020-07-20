@@ -173,7 +173,11 @@ function perturb(vec: Vec3D, amount: number): Vec3D {
     return vec.plus(randomVector.times(amount));
 }
 
+// Bookkeeping
+let numberOfCasts = 0;
 function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
+    numberOfCasts++;
+
     // Get collisions.
     const collisions = collideRay(scene, ray);
 
@@ -218,9 +222,15 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
         dir: bounceNorm
     });
 
-    const BOUNCE_COUNT = 5;
+    const MAX_BOUNCED_RAYS = 5;
+    const getBouncedRays = (percentToMax: number): number => {
+        const newPercent = Math.pow((percentToMax - 1), 2);
+        return Math.floor(MAX_BOUNCED_RAYS * newPercent);
+    };
+    const iterationPercent = iteration / MAX_BOUNCES;
+    const bounceCount = getBouncedRays(iterationPercent);
     const bounces: Color[] = [];
-    repeat(BOUNCE_COUNT, (i) => {
+    repeat(bounceCount, (i) => {
         const perturbedRay = Ray3D.Create({
             pt: newRay.pt,
             dir: perturb(newRay.dir, (lastCollision.object as ICircle).material.spread)
@@ -231,7 +241,7 @@ function cast(scene: IScene, ray: Ray3D, iteration = 0): Color {
     });
 
     const bounce = bounces.reduce((accum, c) => {
-        const factor = BOUNCE_COUNT;
+        const factor = bounceCount;
         const intrinsicColor = (lastCollision.object as ICircle).material.intrinsicColor;
         return {
             r: accum.r + (c.r / factor * (intrinsicColor.r / COLOR_MAX)),
@@ -273,6 +283,8 @@ async function breathe(): Promise<number> {
 }
 
 async function run() {
+    const start_time = new Date();
+
     // Generate scene
     const RADIUS = 50;
     const CIRCLES: Array<ICircle> = [];
@@ -338,6 +350,9 @@ async function run() {
 
         await breathe();
     }
+
+    const duration_s = ((new Date()) - start_time) / 1000;
+    console.log(`Rendering took ${duration_s}s. ${numberOfCasts} casts.`);
 
     // Draw a scale!
     const SCALE_SIZE = 50;
